@@ -1,10 +1,26 @@
-# Shiny UI
+# ShinyApp for analysing global terrorism dataset
+#
+# ui.R defines the ui of the shiny app which is rendered as html/css
+# the inputs and outputs for the gui are defined here
+#
+# Author: Carlo Michaelis
+# License Attribution-ShareAlike 4.0 International
+# Date:   Aug. 2016
+
 ui <- fixedPage(
+  
+  # define title, favicon and css 
   tags$head(
     tags$title("Understand Terrorism - A Statistical Approch"),
-    tags$link(rel = "stylesheet", type = "text/css", ref="file.css")
+    tags$link(rel="shortcut icon", href="www/favicon.ico"),
+    tags$link(rel = "stylesheet", type = "text/css", ref="www/style.css")
   ),
-  h1("Understand Terrorism - An Statistical Approch"),
+  h1("Understand Terrorism - A Statistical Approch"),
+  
+  # define row with two columns, one for input, one for output
+  # as input it is possible to choose between number of incidents and
+  # number of victims, it is optionally possible to filter by region
+  # as ouput a barplot is shown
   h3("Chronological number of indcidents/victims"),
   fixedRow(
     column(4, wellPanel(
@@ -19,6 +35,12 @@ ui <- fixedPage(
     ),
     column(8, plotlyOutput(outputId="hist"))
   ),
+  
+  # define row with two columns, one for input, one for output
+  # as input it is possible to choose a characteristic of the incidents
+  # it is optionally possible to filter by region or time
+  # (decade or year, where year can shown be animated)
+  # as ouput a pieplot is shown
   h3("Characteristics of attacks"),
   fixedRow(
     column(8, plotOutput(outputId="pie")),
@@ -52,7 +74,13 @@ ui <- fixedPage(
       ))
     )
   ),
-  h2("Indicators"),
+  
+  # define row with two columns, one for input, one for output
+  # as input it is possible to choose an indicator, a response and a year
+  # where the year can be shown animated
+  # it is optionally possible to filter by some characteristics
+  # as ouput a pieplot is shown
+  h3("Indicators"),
   fixedRow(
     column(4, wellPanel(
       sliderInput("yearIndi", "Years:",
@@ -76,6 +104,5 @@ ui <- fixedPage(
       strong(textOutput("corr"))
     )),
     column(8, plotlyOutput(outputId="scatt"))
-  ),
-  br(),br(),br()
+  )
 )

@@ -1,5 +1,25 @@
+# ShinyApp for analysing global terrorism dataset
+#
+# server.R defines the server of the shiny app which reacts to user inputs
+# and produces corresponding outputs
+#
+# Author: Carlo Michaelis
+# License Attribution-ShareAlike 4.0 International
+# Date:   Aug. 2016
+
 server <- function(input, output) {
-  # ----- step one ----- histogram -----
+  # created server function to run shinyApp()
+  # handles user inputs und create corresponding outputs
+  #
+  # Args:
+  #   input: inputs from shiny ui
+  #   output: outputs for shiny ui
+  #
+  # Returns:
+  #   server function for shiny app
+  
+  # ----- histogram - frequency data -----
+  
   currFreqData <- reactive({
     # reactive which builds the selected data using freqData
     selector <- input$incRadBox
@@ -17,7 +37,7 @@ server <- function(input, output) {
   })
   
   output$hist <- renderPlotly({
-    # first create ggplot object, using geom_bar instead of geom_histogram
+    # create ggplot object, using geom_bar instead of geom_histogram
     # to have one bar per year, expand limits to maximum (see above in reactive)
     # and theme background and grid lines
     g <- ggplot(currFreqData()$data,
@@ -34,50 +54,41 @@ server <- function(input, output) {
            displaylogo = FALSE, displayModeBar = FALSE)
   })
   
-  # ----- step two ----- pie -----
+  # ----- pie - characteristics data -----
+  
+  # reactive which builds the selected data using charData
   currChar <- reactive({
-    if(input$timeCharBox == TRUE) {
-      tmpData <- select(charData, one_of(input$timeRadBox),
-                        region, one_of(input$char))
-    } else {
-      tmpData <- select(charData, region, one_of(input$char))
-    }
+    # first filter by input characteristic
+    tmpData <- select(charData, region, iyear, decade, one_of(input$char))
     
+    # evaluate the current input condition and filter temporary dataset
+    # by time (year or decade) and region otherwise return global data
     if(input$regionCharBox == TRUE & input$timeCharBox == TRUE) {
-      filter(tmpData, region == input$regionChar & decade == input$decCha)
+      if(input$timeRadBox == 'decade') {
+        subset(tmpData, region == input$regionChar & decade == input$decChar)
+      } else if(input$timeRadBox == 'iyear') {
+        subset(tmpData, region == input$regionChar & iyear == input$yearChar)
+      }
     } else if(input$regionCharBox == TRUE) {
-      filter(tmpData, region == input$regionChar)
-    } else if(input$timeCharBox == TRUE & input$timeRadBox == 'decade') {
-      filter(tmpData, region == input$regionChar & decade == input$decCha)
-    } else if(input$timeCharBox == TRUE & input$timeRadBox == 'iyear') {
-      filter(tmpData, region == input$regionChar & iyear == input$yearChar)
+      subset(tmpData, region == input$regionChar)
+    } else if(input$timeCharBox == TRUE) {
+      if(input$timeRadBox == 'decade') {
+        subset(tmpData, decade == input$decChar)
+      } else if(input$timeRadBox == 'iyear') {
+        subset(tmpData, iyear == input$yearChar)
+      }
     } else {
       tmpData
     }
   })
   
   output$pie <- renderPlot({
-    #colNum <- 3  # number of column in data (fixed)
-    #currCharLabelNum <- currCharColNum()-colNum
     data <- currChar()
     
-    #if(length(data[[colNum]]) == 0) {
-    #  stop("No data available")
-    #}
-    
+    # if no data is available for this characteristic, show an error message
     if(length(data[[input$char]]) == 0) {
       stop("No data available")
     }
-    
-    #missingLabels <- setdiff(charLabels[[currCharLabelNum]],
-    #                         sort(unique(data[[colNum]])))
-    #if(length(missingLabels) != 0) {
-      #currLabels <- names(charLabels[[currCharLabelNum]][-missingLabels])
-    #  currLabels <- names(subset(charLabels[[currCharLabelNum]],
-    #                             !(charLabels[[currCharLabelNum]] %in% missingLabels)))
-    #} else {
-    #  currLabels <- names(charLabels[[currCharLabelNum]])
-    #}
     
     # find missing factor labels in data and remove them from label list
     missingLabels <- setdiff(dataLabels$characteristics[[input$char]]$labels,
@@ -85,28 +96,29 @@ server <- function(input, output) {
     if(length(missingLabels) != 0) {
       currLabels <-
         names(subset(dataLabels$characteristics[[input$char]]$labels,
-                     !(dataLabels$characteristics[[input$char]]$labels
-                       %in% missingLabels)))
+                     !(as.integer(
+                       dataLabels$characteristics[[input$char]]$labels
+                       %in% missingLabels))))
     } else {
       currLabels <- names(dataLabels$characteristics[[input$char]]$labels)
     }
     
-    # data for pie
-    #pieces <- factor(data[[colNum]], labels = currLabels)
-    #pieces <- reorder(pieces, X = pieces, FUN = function(x) -length(x))
-    
+    # prepare data for pie (create factor with data and labels and order it)
     pieces <- factor(data[[input$char]], labels = currLabels)
     pieces <- reorder(pieces, X = pieces, FUN = function(x) -length(x))
     
-    # calculate percentage values for pie pieces
+    # calculate percentage values for pie pieces to show on every piece
     at <- nrow(data) - as.numeric(cumsum(sort(table(pieces)))
                                   - 0.5*sort(table(pieces)))
     perLabel <- paste0(round(sort(table(pieces))/
                                sum(table(pieces)),2) * 100,"%")
     
-    # palette function for more than 9 colors
+    # palette function for more than 9 colors (used in scale_fill_manual below)
     cols <- colorRampPalette(rev(brewer.pal(9, "OrRd")))
     
+    # create ggplot object, using geom_bar, theme it and
+    # transform it into polar coordinates to get it "round"
+    # with annotate the percentage of the pieces are shown
     ggplot(data, aes(x = factor(1), fill = pieces)) +
       geom_bar(width = 1) +
       theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
@@ -120,34 +132,54 @@ server <- function(input, output) {
       annotate(geom = "text", y = at, x = 1.25, label = perLabel)
   })
   
-  # ----- step three ----- scatter -----
+  # ----- scatter - indicators data -----
+  
   currIndiData <- reactive({
+    # define selector for filtering data
     if(input$charIndiBox == FALSE) {
       selector <- "all"
     } else {
       selector <- input$charIndi
     }
     
+    # filter data using selector and select chosen indicator and
+    # response column, finally filter by chosen year
     indiData[[selector]] %>%
       select(Country, Region, Year,
              one_of(c(input$indicator, input$response))) %>%
-      subset(Year == input$yearIndi)
+      filter(Year == input$yearIndi)
   })
   
   output$scatt <- renderPlotly({
+    # if no data is available for this indicator, show an error message
+    if(length(currIndiData()[[input$indicator]]) == 0) {
+      stop("No data available")
+    }
+    
+    # create ggplot object, using geom_point, choose xlim and ylim to have
+    # constant axis (better for comaprison between the years)
     g <- ggplot(currIndiData(),
                 aes_string(x = input$indicator, y = input$response,
                            text = "Country", colour = "Region")) +
       xlim(c(0, max(na.omit(indiData[[input$charIndi]][[input$indicator]])))) +
       ylim(c(0, max(na.omit(indiData[[input$charIndi]][[input$response]])))) +
       geom_point()
+    
+    # create plotly object to have dynamic elements, like tooltip
+    # and remove navigation elements with config, to have a clean plot
     gg <- ggplotly(g)
     config(gg, showLink = FALSE, sendData = FALSE,
            displaylogo = FALSE, displayModeBar = FALSE)
   })
   
   output$corr <- renderText({
-    cor(currIndiData()[[input$indicator]], currIndiData()[[input$response]],
-        use="complete")
+    # show correlation for current data
+    # if no data are available show a message instead of the correlation
+    if(length(currIndiData()[[input$indicator]]) != 0) {
+      cor(currIndiData()[[input$indicator]], currIndiData()[[input$response]],
+          use="complete")
+    } else {
+      "No data available"
+    }
   })
 }
