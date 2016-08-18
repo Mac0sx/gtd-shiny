@@ -5,9 +5,9 @@
 # it also defines a set of functions to prepare the datasets for
 # fluid shiny handling
 #
-# Author: Carlo Michaelis
-# License Attribution-ShareAlike 4.0 International
-# Date:   Aug. 2016
+# Author:  Carlo Michaelis
+# License: Attribution-ShareAlike 4.0 International
+# Date:    Aug. 2016
 
 # ----- helper functions -----
 
@@ -52,7 +52,8 @@ loadData <- function(prepDir = "dataset", rawDir = "raw") {
     charData <<- getCharData(rawData, names(dataLabels$characteristics))
     indiData <<- getIndiData(rawData, rawIndi)
     
-    save(freqData, charData, indiData, file = pasteq(prepDir, "/prepared_data.RData"))
+    save(freqData, charData, indiData,
+         file = pasteq(prepDir, "/prepared_data.RData"))
   }
 }
 
@@ -70,7 +71,8 @@ loadRawResponseFile <- function(rawDir = "raw") {
   # this is just for historical reasons
   #
   # ###
-  # dat <- read.xlsx(pasteq(getwd(), "/datasets/globalterrorismdb_0616dist.xlsx"),
+  # dat <- read.xlsx(pasteq(getwd(),
+  #                  "/datasets/globalterrorismdb_0616dist.xlsx"),
   #                 sheet=1, colNames = TRUE)
   # save(dat, file = pasteq(getwd(), "/datasets/gtd.RData"))
   # ###
@@ -123,8 +125,7 @@ loadRawIndicatorFiles <- function(rawDir = "raw") {
   
   # read dataset from csv, melt, select and mutate
   # finally create country_iso (which is not available in this dataset directly)
-  # afterwards omit all data which is NA, which is necessary here, because
-  # this dataset contains many empty years (1970 to 1987)
+  # afterwards omit all country data which could not be converted to iso
   # source: https://www.sipri.org/databases/milex
   military <-
     read.csv(file = pasteq(rawDir, "/military.csv"),
@@ -140,7 +141,7 @@ loadRawIndicatorFiles <- function(rawDir = "raw") {
   # - to capture uncertainty this dataset contains 100 data frames
   #   with slightly variing data, so the mean is calculated,
   #   follwing the instructions of the dataset
-  # - afterwards add country_iso and omit na
+  # - afterwards add country_iso and omit na countries
   # source: http://fsolt.org/swiid/
   load(file = pasteq(rawDir, "/inequality.RData"))
   inequality <- swiid %>%
@@ -214,15 +215,18 @@ getDataLabels <- function() {
              "labels" =
                setNames(1:13, c("Biological", "Chemical", "Radiological",
                                 "Nuclear", "Firearms", "Explosives",
-                                "Fake Weapons", "Incendiary", "Melee", "Vehicle",
-                                "Sabotage Equipment", "Other", "Unknown"))),
+                                "Fake Weapons", "Incendiary", "Melee",
+                                "Vehicle", "Sabotage Equipment", "Other",
+                                "Unknown"))),
       "targtype1" =
         list("name" = "Type of victim",
              "labels" =
                setNames(1:22, c("Business", "Governmental (General)", "Police",
                                 "Military", "Abortion Related",
-                                "Airports & Aircrafts", "Government (Diplomatic)",
-                                "Educational Institution", "Food & Water Supply",
+                                "Airports & Aircrafts",
+                                "Government (Diplomatic)",
+                                "Educational Institution",
+                                "Food & Water Supply",
                                 "Journalists & Media", "Maritime", "NGO",
                                 "Other", "Citizens & Propoerty",
                                 "Religoius Figures & Insitutions",
@@ -255,8 +259,9 @@ getDataLabels <- function() {
 # ----- data preparation functions -----
 
 getFreqData <- function(data) {
-  # prepare frequency data to show frequencies of incidents
-  # and number of victims per incident in later use
+  # prepare frequency data to show frequencies of incidents (one per region,
+  # one for the whole world) and number of victims per incident (also one
+  # per region and one for the whole world
   #
   # Args:
   #   data: the data where incidence and victim counts are calculated with
@@ -354,9 +359,6 @@ getCharData <- function(data, selection) {
       mutate(decade = yearToDecade(iyear))
   }
   
-  # change order
-  #charData <- charData[c(1,11,2:10)]  # obsolete ???
-  
   # some corretions of NA's
   charData[charData == -9] <- 99  # no data = unknown
   charData[charData == -99] <- 99  # no data = unknown
@@ -381,7 +383,7 @@ getIndiData <- function(data, indicators, characteristics =
   #   indicators: a list of datasets where indicators are extracted from
   #         beside the data column they need to contain "country_iso" and "Year"
   #   characteristics: for filtering indicators/response data
-  #         just characteristics with "yes", "no", "unknown" levels are possible,
+  #         just characteristics with "yes", "no", "unknown" are possible,
   #         where "yes" is coded with "1"
   #
   # Returns:

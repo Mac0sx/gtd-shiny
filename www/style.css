@@ -1,0 +1,15 @@
+.container {
+  margin-bottom: 50px;
+}
+
+.jumbotron p {
+  font-size: inherit;
+}
+
+.jumbotron p:last-child {
+  margin-bottom: 0;
+}
+
+.container .jumbotron {
+  padding: 25px;
+}

@@ -3,9 +3,9 @@
 # global.R loads libraries, sets workspace, handles sources
 # and is starting the app
 #
-# Author: Carlo Michaelis
-# License Attribution-ShareAlike 4.0 International
-# Date:   Aug. 2016
+# Author:  Carlo Michaelis
+# License: Attribution-ShareAlike 4.0 International
+# Date:    Aug. 2016
 
 library(openxlsx)
 library(shiny)
@@ -24,8 +24,8 @@ source("preprocessing.R")
 
 # load prepared data
 # if no prepared data is available it will be created using raw data files
-# important: if considered variables have changed,
-# delete prepared data files before running this function
+# important: if considered variables have changed, delete prepared data files
+# before running this function (like cleaning cache)
 loadData()
 
 # load sources with ui object and server function

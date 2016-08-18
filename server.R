@@ -3,9 +3,9 @@
 # server.R defines the server of the shiny app which reacts to user inputs
 # and produces corresponding outputs
 #
-# Author: Carlo Michaelis
-# License Attribution-ShareAlike 4.0 International
-# Date:   Aug. 2016
+# Author:  Carlo Michaelis
+# License: Attribution-ShareAlike 4.0 International
+# Date:    Aug. 2016
 
 server <- function(input, output) {
   # created server function to run shinyApp()
